@@ -1,0 +1,41 @@
+{
+	"schemaVersion": 1,
+	"id": "hideAndSeek",
+	"version": "${version}",
+	"name": "Hide And Seek",
+	"description": "Fabric Hide and Seek thing",
+	"authors": [
+		"Platratio34"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/hideAndSeek/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.peter.HideAndSeek"
+		],
+		"client": [
+			
+		]
+	},
+	"mixins": [
+		"hideAndSeek.mixins.json",
+		{
+			"config": "hideAndSeek.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.14.0",
+		"minecraft": "~1.20.1",
+		"java": ">=17",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
