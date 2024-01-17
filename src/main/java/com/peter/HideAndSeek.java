@@ -105,7 +105,6 @@ public class HideAndSeek implements ModInitializer {
 			hsPlayer = manager.getPlayer(player);
 		}
 		if (action.equals("hider")) {
-			LOGGER.info("trying to make player hider");
 			if (player == null) {
 				cmdSendFeedback(context, ChatColor.RED+"Must be a player to be a hider");
 				return -1;
@@ -152,7 +151,7 @@ public class HideAndSeek implements ModInitializer {
 				return 0;
 			}
 			hsPlayer.clear();
-			cmdSendFeedback(context, ChatColor.RED+"You are no longer a hider or seeker");
+			cmdSendFeedback(context, ChatColor.GOLD+"You are no longer a hider or seeker");
 			return 1;
 		} else if (action.equals("list")) {
 			String hiderNames = "";
@@ -179,8 +178,8 @@ public class HideAndSeek implements ModInitializer {
 			cmdSendFeedback(context, "Current seeker(s): " + seekerNames + "\nCurrent hider(s): " + hiderNames);
 			return 1;
 		} else if (action.equals("start")) {
-			manager.start();
 			cmdSendFeedback(context, ChatColor.GREEN+"Game starting . . .");
+			manager.start();
 			return 1;
 		} else if (action.equals("stop")) {
 			if (!manager.running) {

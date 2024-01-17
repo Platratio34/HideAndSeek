@@ -24,19 +24,10 @@ public class HSPlayer {
     }
 
     public void makeHider() {
-        HideAndSeek.LOGGER.info("making player "+getName()+" hider");
         isHider = true;
         isSeeker = false;
-        HideAndSeek.LOGGER.info("s1");
-        try {
-            HideAndSeek.scoreboard.addPlayerToTeam(getName(), manager.hiderTeam);
-        } catch (Exception e) {
-            HideAndSeek.LOGGER.error(e.toString());
-            HideAndSeek.LOGGER.error(e.getStackTrace().toString());
-        }
-        HideAndSeek.LOGGER.info("s2");
+        HideAndSeek.scoreboard.addPlayerToTeam(getName(), manager.hiderTeam);
         manager.timeBar.addPlayer(player);
-        HideAndSeek.LOGGER.info("Made player "+getName()+" hider");
     }
 
     public void makeSeeker() {
@@ -56,8 +47,8 @@ public class HSPlayer {
     public void setHint(String hint) {
         nextHint = hint;
         if (lateHint) {
-            manager.sendMessageToAllPlayers("Hint for " + getName() + ": " + hint+"\n");
-            sendMessage("Don't forget to set your next hint");
+            manager.sendMessageToAllPlayers(ChatColor.BLUE+"Hint for " + getName() + ": " + ChatColor.WHITE + hint+"\n");
+            sendMessage(ChatColor.GOLD + "Don't forget to set your next hint");
         }
         lateHint = false;
     }

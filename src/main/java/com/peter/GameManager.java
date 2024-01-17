@@ -100,7 +100,7 @@ public class GameManager implements ServerTickEvents.StartTick {
     private String formatTime(float s, String formatString) {
         String sign = "";
         if (s < 0) {
-            sign = "-";
+            // sign = "-";
             s *= -1;
         }
         if (s < 60) {
@@ -174,8 +174,7 @@ public class GameManager implements ServerTickEvents.StartTick {
                     p.sendMessage(ChatColor.RED+"You did not enter your hint, please do it quickly");
                     continue;
                 }
-                // sendMessageToAllPlayers("Hint for " + p.getName() + ": " + p.nextHint);
-                hintText += "Hint for " + p.getName() + ": " + p.nextHint + "\n";
+                hintText += ChatColor.BLUE+"Hint for " + p.getName() + ": " + ChatColor.WHITE + p.nextHint + "\n";
                 p.nextHint = "";
             }
             hintText += "\n"+ChatColor.GOLD+"Next hint at " + formatTime(hintTimes[nextHintIndex + 1]) + " in "
@@ -194,6 +193,9 @@ public class GameManager implements ServerTickEvents.StartTick {
             timeBar.setPercent(p);
             if (time > -10) {
                 timeBar.setColor(Color.RED);
+                if (lTime < -10) {
+                    sendMessageToAllPlayers(ChatColor.GOLD+"10 seconds remaining to hide");
+                }
             } else if (time > -30) {
                 timeBar.setColor(Color.YELLOW);
                 if (lTime < -30) {
@@ -225,6 +227,14 @@ public class GameManager implements ServerTickEvents.StartTick {
                 timeBar.setColor(Color.RED);
                 if ((hintTimes[nextHintIndex] - lTime) > 10) {
                     sendMessageToAllPlayers(ChatColor.GOLD+"10 seconds to next hint");
+                    for (Map.Entry<UUID, HSPlayer> entry : players.entrySet()) {
+                        HSPlayer pl = entry.getValue();
+                        if (!pl.isHider)
+                            continue;
+                        if (pl.nextHint.equals("")) {
+                            pl.sendMessage(ChatColor.RED+"Set you next hit, 10 seconds remaining");
+                        }
+                    }
                 }
             } else if (timeToNext < 30) {
                 timeBar.setColor(Color.YELLOW);
