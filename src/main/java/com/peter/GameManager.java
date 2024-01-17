@@ -5,8 +5,6 @@ import java.util.UUID;
 
 import org.spongepowered.asm.mixin.injection.struct.InjectorGroupInfo.Map;
 
-import com.mojang.datafixers.FunctionType.Instance.Mu;
-
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.entity.boss.CommandBossBar;
 import net.minecraft.entity.boss.BossBar.Color;
@@ -14,7 +12,6 @@ import net.minecraft.scoreboard.AbstractTeam.VisibilityRule;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 
 public class GameManager implements ServerTickEvents.StartTick {
