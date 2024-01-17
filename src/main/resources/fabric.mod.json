@@ -1,6 +1,6 @@
 {
 	"schemaVersion": 1,
-	"id": "hideAndSeek",
+	"id": "hideandseek",
 	"version": "${version}",
 	"name": "Hide And Seek",
 	"description": "Fabric Hide and Seek thing",
@@ -12,7 +12,7 @@
 		"sources": "https://github.com/FabricMC/fabric-example-mod"
 	},
 	"license": "CC0-1.0",
-	"icon": "assets/hideAndSeek/icon.png",
+	"icon": "assets/hideandseek/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
@@ -23,11 +23,6 @@
 		]
 	},
 	"mixins": [
-		"hideAndSeek.mixins.json",
-		{
-			"config": "hideAndSeek.client.mixins.json",
-			"environment": "client"
-		}
 	],
 	"depends": {
 		"fabricloader": ">=0.14.0",
