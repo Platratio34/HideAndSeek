@@ -2,6 +2,7 @@ package com.peter;
 
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 
 import com.google.gson.Gson;
@@ -102,12 +103,25 @@ public class Config {
             jHintTimes.add(hintTimes[i]);
         }
         obj.add("hintTimes", jHintTimes);
-        
+
         JsonObject center = new JsonObject();
         center.addProperty("x", centerX);
         center.addProperty("y", centerY);
         center.addProperty("z", centerZ);
         obj.add("center", center);
+
+        try {
+            FileWriter writer = new FileWriter(configFile);
+            GSON.toJson(obj, writer);
+            writer.close();
+        } catch (IOException e) {
+            HideAndSeek.LOGGER.error("IO Error in saving config");
+            HideAndSeek.LOGGER.error(e.toString());
+        }
+    }
+    
+    public void debug() {
+        HideAndSeek.LOGGER.info(String.format("hideTime %.1f", hideTime));
     }
 
 }

@@ -39,7 +39,6 @@ public class GameManager implements ServerTickEvents.StartTick {
     public Team seekerTeam;
     public CommandBossBar timeBar;
 
-    public float hideTime = 2 * 60f;
     private int nextHintIndex = 0;
 
     private Logger logger;
@@ -49,7 +48,6 @@ public class GameManager implements ServerTickEvents.StartTick {
     public GameManager() {
         players = new HashMap<UUID, HSPlayer>();
         logger = HideAndSeek.LOGGER;
-        hideTime = 30; // dev only
         config = new Config();
         config.load();
     }
@@ -77,7 +75,7 @@ public class GameManager implements ServerTickEvents.StartTick {
             p.gameStart();
         }
 
-        sendMessageToAllPlayers(ChatColor.GREEN+"Hide and Seek Starting.\n\n"+ChatColor.GOLD+"You have " + formatTime(hideTime)
+        sendMessageToAllPlayers(ChatColor.GREEN+"Hide and Seek Starting.\n\n"+ChatColor.GOLD+"You have " + formatTime(config.hideTime)
                 + " to hide before seekers are released");
     }
 
@@ -162,7 +160,7 @@ public class GameManager implements ServerTickEvents.StartTick {
 
         long runTimeM = System.currentTimeMillis() - startTime;
         float lTime = time;
-        time = (runTimeM / 1000f) - hideTime;
+        time = (runTimeM / 1000f) - config.hideTime;
 
         if (config.hintTimes[nextHintIndex] > lTime && config.hintTimes[nextHintIndex] <= time) {
             // Do the next hint
@@ -203,7 +201,7 @@ public class GameManager implements ServerTickEvents.StartTick {
         if (time < 0) {
             timeBar.setName(Text.of(String.format("Hide Time: %s", formatTime(time))));
 
-            float p = -time / hideTime;
+            float p = -time / config.hideTime;
             timeBar.setPercent(p);
             if (time > -10) {
                 timeBar.setColor(Color.RED);
@@ -218,7 +216,7 @@ public class GameManager implements ServerTickEvents.StartTick {
             } else {
                 timeBar.setColor(Color.GREEN);
             }
-            timeBar.setPercent(-time / hideTime);
+            timeBar.setPercent(-time / config.hideTime);
             for (Map.Entry<UUID, HSPlayer> entry : players.entrySet()) {
                 HSPlayer pl = entry.getValue();
                 if (!pl.isSeeker)

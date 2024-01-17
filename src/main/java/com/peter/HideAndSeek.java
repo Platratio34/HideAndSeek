@@ -229,6 +229,15 @@ public class HideAndSeek implements ModInitializer {
 					cmdSendFeedback(context, ChatColor.GREEN + "Hint set to " + ChatColor.WHITE + "\"" + hint + "\"");
 				hsPlayer.setHint(hint);
 				return 1;
+			} else if (action.equals("reload")) {
+				if (manager.running) {
+					cmdSendFeedback(context, ChatColor.RED + "Config can not be loaded while a game is running");
+					return -1;
+				}
+				manager.config.load();
+				manager.config.debug();
+				cmdSendFeedback(context, ChatColor.YELLOW + "Reloading config . . .");
+				return 1;
 			}
 			cmdSendFeedback(context, ChatColor.RED + "Unknown action \"" + action + "\"");
 			return -1;
