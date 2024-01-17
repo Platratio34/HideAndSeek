@@ -3,10 +3,15 @@ package com.peter;
 import java.util.HashMap;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+
 import org.spongepowered.asm.mixin.injection.struct.InjectorGroupInfo.Map;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.boss.CommandBossBar;
+import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.boss.BossBar.Color;
 import net.minecraft.scoreboard.AbstractTeam.VisibilityRule;
 import net.minecraft.scoreboard.Team;
@@ -62,8 +67,12 @@ public class GameManager implements ServerTickEvents.StartTick {
     };
     private int nextHintIndex = 0;
 
+    private Logger logger;
+
     public GameManager() {
         players = new HashMap<UUID, HSPlayer>();
+        logger = HideAndSeek.LOGGER;
+        hideTime = 30; // dev only
     }
 
     public HSPlayer getPlayer(ServerPlayerEntity player) {
@@ -80,6 +89,11 @@ public class GameManager implements ServerTickEvents.StartTick {
         running = true;
         nextHintIndex = 0;
         timeBar.setVisible(true);
+        
+        for (Map.Entry<UUID, HSPlayer> entry : players.entrySet()) {
+            HSPlayer p = entry.getValue();
+            p.gameStart();
+        }
 
         sendMessageToAllPlayers(ChatColor.GREEN+"Hide and Seek Starting.\n\n"+ChatColor.GOLD+"You have " + formatTime(hideTime)
                 + " to hide before seekers are released");
@@ -193,12 +207,12 @@ public class GameManager implements ServerTickEvents.StartTick {
             timeBar.setPercent(p);
             if (time > -10) {
                 timeBar.setColor(Color.RED);
-                if (lTime < -10) {
+                if (lTime <= -10) {
                     sendMessageToAllPlayers(ChatColor.GOLD+"10 seconds remaining to hide");
                 }
             } else if (time > -30) {
                 timeBar.setColor(Color.YELLOW);
-                if (lTime < -30) {
+                if (lTime <= -30) {
                     sendMessageToAllPlayers(ChatColor.GOLD+"30 seconds remaining to hide");
                 }
             } else {
@@ -225,7 +239,7 @@ public class GameManager implements ServerTickEvents.StartTick {
             timeBar.setPercent(p);
             if (timeToNext < 10) {
                 timeBar.setColor(Color.RED);
-                if ((hintTimes[nextHintIndex] - lTime) > 10) {
+                if ((hintTimes[nextHintIndex] - lTime) >= 10) {
                     sendMessageToAllPlayers(ChatColor.GOLD+"10 seconds to next hint");
                     for (Map.Entry<UUID, HSPlayer> entry : players.entrySet()) {
                         HSPlayer pl = entry.getValue();
@@ -238,7 +252,7 @@ public class GameManager implements ServerTickEvents.StartTick {
                 }
             } else if (timeToNext < 30) {
                 timeBar.setColor(Color.YELLOW);
-                if ((hintTimes[nextHintIndex] - lTime) > 30) {
+                if ((hintTimes[nextHintIndex] - lTime) >= 30) {
                     for (Map.Entry<UUID, HSPlayer> entry : players.entrySet()) {
                         HSPlayer pl = entry.getValue();
                         if (!pl.isHider)
@@ -252,5 +266,61 @@ public class GameManager implements ServerTickEvents.StartTick {
                 timeBar.setColor(Color.GREEN);
             }
         }
+    }
+
+    public boolean checkDamage(Entity entity, DamageSource source) {
+        if (!(source.getAttacker() instanceof ServerPlayerEntity)) {
+            // if (source.getAttacker() != null)
+            //     logger.info("Skipping damage from " + source.getAttacker().getName());
+            // else logger.info("Skipping damage from unknown");
+            return false;
+        }
+        if (!(entity instanceof ServerPlayerEntity)) {
+            // logger.info("Skipping damage for " + entity.getName());
+            return false;
+        }
+        logger.info("Thing-ing");
+        return false;
+    }
+
+    public boolean checkDamage(PlayerEntity source, Entity entity) {
+        if (!running)
+            return false;
+        if (!(entity instanceof ServerPlayerEntity)) {
+            // logger.info("Skipping damage for " + entity.getName());
+            return false;
+        }
+        UUID sUuid = source.getUuid();
+        if (!players.containsKey(sUuid))
+            return false;
+        UUID dUuid = ((PlayerEntity)entity).getUuid();
+        if (!players.containsKey(dUuid))
+            return false;
+        HSPlayer sPlayer = players.get(sUuid);
+        if (!sPlayer.isSeeker)
+            return true;
+        HSPlayer dPlayer = players.get(dUuid);
+        if (!dPlayer.isHider)
+            return true;
+        if (time < 0)
+            return true;
+        if (dPlayer.found)
+            return true;
+        dPlayer.found = true;
+        dPlayer.sendMessage(ChatColor.GREEN + "You have been found");
+        int remaining = 0;
+        for (Map.Entry<UUID, HSPlayer> entry : players.entrySet()) {
+            HSPlayer p = entry.getValue();
+            if (p.isHider && !p.found) {
+                remaining++;
+            }
+        }
+        if (remaining <= 0) {
+            sendMessageToAllPlayers(ChatColor.GREEN+"All players have been found");
+            stop();
+        } else {
+            sendMessageToAllSeekers(ChatColor.GREEN+"One found, " + remaining + " to go");
+        }
+        return true;
     }
 }

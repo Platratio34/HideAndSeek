@@ -7,6 +7,7 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.minecraft.entity.boss.BossBarManager;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.Team;
@@ -14,8 +15,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Identifier;
-
 import static net.minecraft.server.command.CommandManager.*;
 
 import org.slf4j.Logger;
@@ -84,6 +85,13 @@ public class HideAndSeek implements ModInitializer {
 
 		ServerTickEvents.START_SERVER_TICK.register(manager);
 
+		AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
+			if (manager.checkDamage(player, entity)) {
+				return ActionResult.FAIL;
+			}
+			return ActionResult.PASS;
+		});
+
 		LOGGER.info("Loaded Hide & Seek");
 		LOGGER.info("        _ ");
 		LOGGER.info("|__|   |_ ");
@@ -98,115 +106,121 @@ public class HideAndSeek implements ModInitializer {
 	}
 
 	private int actionCommand(CommandContext<ServerCommandSource> context) {
-		String action = StringArgumentType.getString(context, "action");
-		ServerPlayerEntity player = context.getSource().getPlayer();
-		HSPlayer hsPlayer = null;
-		if (player != null) {
-			hsPlayer = manager.getPlayer(player);
-		}
-		if (action.equals("hider")) {
-			if (player == null) {
-				cmdSendFeedback(context, ChatColor.RED+"Must be a player to be a hider");
-				return -1;
+		try {
+			String action = StringArgumentType.getString(context, "action");
+			ServerPlayerEntity player = context.getSource().getPlayer();
+			HSPlayer hsPlayer = null;
+			if (player != null) {
+				hsPlayer = manager.getPlayer(player);
 			}
-
-			if (hsPlayer.isHider) {
-				cmdSendFeedback(context, ChatColor.GOLD+"You are already a hider");
-				return 0;
-			}
-			if (hsPlayer.isSeeker) {
-				cmdSendFeedback(context, ChatColor.RED+"You can not be both a seeker and hider");
-				return 0;
-			}
-
-			hsPlayer.makeHider();
-			cmdSendFeedback(context, ChatColor.GREEN+"You are now a hider");
-			return 1;
-		} else if (action.equals("seeker")) {
-			if (player == null) {
-				cmdSendFeedback(context, ChatColor.RED+"Must be a player to be a hider");
-				return -1;
-			}
-
-			if (hsPlayer.isSeeker) {
-				cmdSendFeedback(context, ChatColor.GOLD+"You are already a seeker");
-				return 0;
-			}
-			if (hsPlayer.isHider) {
-				cmdSendFeedback(context, ChatColor.RED+"You can not be both a seeker and hider");
-				return 0;
-			}
-
-			hsPlayer.makeSeeker();
-			cmdSendFeedback(context, ChatColor.GREEN + "You are now a seeker");
-			return 1;
-		} else if (action.equals("clear")) {
-			if (player == null) {
-				cmdSendFeedback(context, ChatColor.RED+"Must be a player to be a hider");
-				return -1;
-			}
-
-			if (!(hsPlayer.isSeeker || hsPlayer.isHider)) {
-				cmdSendFeedback(context, ChatColor.GREEN+"You were not a hider or seeker");
-				return 0;
-			}
-			hsPlayer.clear();
-			cmdSendFeedback(context, ChatColor.GOLD+"You are no longer a hider or seeker");
-			return 1;
-		} else if (action.equals("list")) {
-			String hiderNames = "";
-			String seekerNames = "";
-			boolean hc = false;
-			boolean sc = false;
-			for (Map.Entry<UUID, HSPlayer> entry : manager.players.entrySet()) {
-				HSPlayer p = entry.getValue();
-				if (p.isHider) {
-					if (hc) {
-						hiderNames += ", ";
-					}
-					hiderNames += p.getName();
-					hc = true;
+			if (action.equals("hider")) {
+				if (player == null) {
+					cmdSendFeedback(context, ChatColor.RED + "Must be a player to be a hider");
+					return -1;
 				}
-				if (p.isSeeker) {
-					if (sc) {
-						seekerNames += ", ";
-					}
-					seekerNames += p.getName();
-					sc = true;
+
+				if (hsPlayer.isHider) {
+					cmdSendFeedback(context, ChatColor.GOLD + "You are already a hider");
+					return 0;
 				}
-			}
-			cmdSendFeedback(context, "Current seeker(s): " + seekerNames + "\nCurrent hider(s): " + hiderNames);
-			return 1;
-		} else if (action.equals("start")) {
-			cmdSendFeedback(context, ChatColor.GREEN+"Game starting . . .");
-			manager.start();
-			return 1;
-		} else if (action.equals("stop")) {
-			if (!manager.running) {
-				cmdSendFeedback(context, ChatColor.RED+"Game not running");
-				return 0;
-			}
-			manager.stop();
-			return 1;
-		} else if (action.equals("hint")) {
-			if (player == null) {
-				cmdSendFeedback(context, ChatColor.RED+"Must be a player to give a hint");
-				return -1;
-			}
+				if (hsPlayer.isSeeker) {
+					cmdSendFeedback(context, ChatColor.RED + "You can not be both a seeker and hider");
+					return 0;
+				}
 
-			if (!hsPlayer.isHider) {
-				cmdSendFeedback(context, ChatColor.RED+"You must be a hider to give a hint");
-				return -1;
-			}
+				hsPlayer.makeHider();
+				cmdSendFeedback(context, ChatColor.GREEN + "You are now a hider");
+				return 1;
+			} else if (action.equals("seeker")) {
+				if (player == null) {
+					cmdSendFeedback(context, ChatColor.RED + "Must be a player to be a hider");
+					return -1;
+				}
 
-			String hint = StringArgumentType.getString(context, "argument");
-			if (!hsPlayer.lateHint)
-				cmdSendFeedback(context, ChatColor.GREEN+"Hint set to "+ChatColor.WHITE+"\"" + hint + "\"");
-			hsPlayer.setHint(hint);
-			return 1;
+				if (hsPlayer.isSeeker) {
+					cmdSendFeedback(context, ChatColor.GOLD + "You are already a seeker");
+					return 0;
+				}
+				if (hsPlayer.isHider) {
+					cmdSendFeedback(context, ChatColor.RED + "You can not be both a seeker and hider");
+					return 0;
+				}
+
+				hsPlayer.makeSeeker();
+				cmdSendFeedback(context, ChatColor.GREEN + "You are now a seeker");
+				return 1;
+			} else if (action.equals("clear")) {
+				if (player == null) {
+					cmdSendFeedback(context, ChatColor.RED + "Must be a player to be a hider");
+					return -1;
+				}
+
+				if (!(hsPlayer.isSeeker || hsPlayer.isHider)) {
+					cmdSendFeedback(context, ChatColor.GREEN + "You were not a hider or seeker");
+					return 0;
+				}
+				hsPlayer.clear();
+				cmdSendFeedback(context, ChatColor.GOLD + "You are no longer a hider or seeker");
+				return 1;
+			} else if (action.equals("list")) {
+				String hiderNames = "";
+				String seekerNames = "";
+				boolean hc = false;
+				boolean sc = false;
+				for (Map.Entry<UUID, HSPlayer> entry : manager.players.entrySet()) {
+					HSPlayer p = entry.getValue();
+					if (p.isHider) {
+						if (hc) {
+							hiderNames += ", ";
+						}
+						hiderNames += p.getName();
+						hc = true;
+					}
+					if (p.isSeeker) {
+						if (sc) {
+							seekerNames += ", ";
+						}
+						seekerNames += p.getName();
+						sc = true;
+					}
+				}
+				cmdSendFeedback(context, "Current seeker(s): " + seekerNames + "\nCurrent hider(s): " + hiderNames);
+				return 1;
+			} else if (action.equals("start")) {
+				cmdSendFeedback(context, ChatColor.GREEN + "Game starting . . .");
+				manager.start();
+				return 1;
+			} else if (action.equals("stop")) {
+				if (!manager.running) {
+					cmdSendFeedback(context, ChatColor.RED + "Game not running");
+					return 0;
+				}
+				manager.stop();
+				return 1;
+			} else if (action.equals("hint")) {
+				if (player == null) {
+					cmdSendFeedback(context, ChatColor.RED + "Must be a player to give a hint");
+					return -1;
+				}
+
+				if (!hsPlayer.isHider) {
+					cmdSendFeedback(context, ChatColor.RED + "You must be a hider to give a hint");
+					return -1;
+				}
+
+				String hint = StringArgumentType.getString(context, "argument");
+				if (!hsPlayer.lateHint)
+					cmdSendFeedback(context, ChatColor.GREEN + "Hint set to " + ChatColor.WHITE + "\"" + hint + "\"");
+				hsPlayer.setHint(hint);
+				return 1;
+			}
+			cmdSendFeedback(context, ChatColor.RED + "Unknown action \"" + action + "\"");
+			return -1;
+		} catch (Exception e) {
+			LOGGER.error(e.toString());
+			cmdSendFeedback(context, ChatColor.RED+"Something went wrong");
+			return -1;
 		}
-		cmdSendFeedback(context, ChatColor.RED+"Unknown action \"" + action + "\"");
-		return -1;
 	}
 
 }

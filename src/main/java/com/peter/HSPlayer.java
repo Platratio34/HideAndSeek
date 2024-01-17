@@ -12,6 +12,8 @@ public class HSPlayer {
     public String nextHint = "";
     public boolean lateHint = false;
 
+    public boolean found = false;
+
     private GameManager manager;
 
     public HSPlayer(ServerPlayerEntity player, GameManager manager) {
@@ -33,14 +35,16 @@ public class HSPlayer {
     public void makeSeeker() {
         isHider = false;
         isSeeker = true;
-        HideAndSeek.scoreboard.removePlayerFromTeam(player.getEntityName(), manager.hiderTeam);
+        if(HideAndSeek.scoreboard.getPlayerTeam(player.getEntityName()) == manager.hiderTeam)
+            HideAndSeek.scoreboard.removePlayerFromTeam(player.getEntityName(), manager.hiderTeam);
         manager.timeBar.addPlayer(player);
     }
 
     public void clear() {
         isHider = false;
         isSeeker = false;
-        HideAndSeek.scoreboard.removePlayerFromTeam(player.getEntityName(), manager.hiderTeam);
+        if(HideAndSeek.scoreboard.getPlayerTeam(player.getEntityName()) == manager.hiderTeam)
+            HideAndSeek.scoreboard.removePlayerFromTeam(player.getEntityName(), manager.hiderTeam);
         manager.timeBar.removePlayer(player);
     }
 
@@ -63,5 +67,7 @@ public class HSPlayer {
 
     public void gameStart() {
         nextHint = "";
+        found = false;
+        lateHint = false;
     }
 }
