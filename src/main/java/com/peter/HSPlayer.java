@@ -37,6 +37,7 @@ public class HSPlayer {
         isSeeker = true;
         if(HideAndSeek.scoreboard.getPlayerTeam(player.getEntityName()) == manager.hiderTeam)
             HideAndSeek.scoreboard.removePlayerFromTeam(player.getEntityName(), manager.hiderTeam);
+        HideAndSeek.scoreboard.addPlayerToTeam(getName(), manager.seekerTeam);
         manager.timeBar.addPlayer(player);
     }
 
@@ -45,6 +46,8 @@ public class HSPlayer {
         isSeeker = false;
         if(HideAndSeek.scoreboard.getPlayerTeam(player.getEntityName()) == manager.hiderTeam)
             HideAndSeek.scoreboard.removePlayerFromTeam(player.getEntityName(), manager.hiderTeam);
+        if(HideAndSeek.scoreboard.getPlayerTeam(player.getEntityName()) == manager.seekerTeam)
+            HideAndSeek.scoreboard.removePlayerFromTeam(player.getEntityName(), manager.seekerTeam);
         manager.timeBar.removePlayer(player);
     }
 
@@ -69,5 +72,9 @@ public class HSPlayer {
         nextHint = "";
         found = false;
         lateHint = false;
+    }
+
+    public void handleDisconnect() {
+        clear();
     }
 }

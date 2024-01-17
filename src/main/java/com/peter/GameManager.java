@@ -11,17 +11,25 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.boss.CommandBossBar;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
 import net.minecraft.entity.boss.BossBar.Color;
 import net.minecraft.scoreboard.AbstractTeam.VisibilityRule;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 
 public class GameManager implements ServerTickEvents.StartTick {
 
     private final String TIME_FORMAT = "%s%02d:%02.0f";
+    private final String NO_RADAR_EFFECT_NAME = "xaerominimap:no_entity_radar";
+    private StatusEffect NO_RADAR_EFFECT;
 
     public HashMap<UUID, HSPlayer> players;
 
@@ -30,6 +38,7 @@ public class GameManager implements ServerTickEvents.StartTick {
     private long startTime = 0;
 
     public Team hiderTeam;
+    public Team seekerTeam;
     public CommandBossBar timeBar;
 
     public float hideTime = 2 * 60f;
@@ -67,6 +76,10 @@ public class GameManager implements ServerTickEvents.StartTick {
     };
     private int nextHintIndex = 0;
 
+    private double centerX = 0.5;
+    private double centerY = 101;
+    private double centerZ = 0.5;
+
     private Logger logger;
 
     public GameManager() {
@@ -84,6 +97,9 @@ public class GameManager implements ServerTickEvents.StartTick {
     }
 
     public void start() {
+        if (NO_RADAR_EFFECT == null) {
+            NO_RADAR_EFFECT = Registries.STATUS_EFFECT.get(new Identifier(NO_RADAR_EFFECT_NAME));
+        }
         hiderTeam.setNameTagVisibilityRule(VisibilityRule.HIDE_FOR_OTHER_TEAMS);
         startTime = System.currentTimeMillis();
         running = true;
@@ -103,6 +119,15 @@ public class GameManager implements ServerTickEvents.StartTick {
         running = false;
         hiderTeam.setNameTagVisibilityRule(VisibilityRule.ALWAYS);
         timeBar.setVisible(false);
+
+        for (Map.Entry<UUID, HSPlayer> entry : players.entrySet()) {
+            HSPlayer pl = entry.getValue();
+            if (!pl.isSeeker)
+                continue;
+            if(pl.player.hasStatusEffect(NO_RADAR_EFFECT)) {
+                pl.player.removeStatusEffect(NO_RADAR_EFFECT);
+            }
+        }
 
         sendMessageToAllPlayers(ChatColor.GREEN+"Game ended at " + formatTime(time, "%s%02d:%02.1f"));
     }
@@ -176,7 +201,7 @@ public class GameManager implements ServerTickEvents.StartTick {
         if (hintTimes[nextHintIndex] > lTime && hintTimes[nextHintIndex] <= time) {
             // Do the next hint
             // Check w/ lTime is for if the hint should have been done between the last tick and this one
-            sendMessageToAllPlayers(ChatColor.GREEN+"Hint time! (" + formatTime(time) + ")");
+            sendMessageToAllPlayers(ChatColor.GREEN + "Hint time! (" + formatTime(time) + ")");
 
             String hintText = "\n";
             for (Map.Entry<UUID, HSPlayer> entry : players.entrySet()) {
@@ -185,19 +210,28 @@ public class GameManager implements ServerTickEvents.StartTick {
                     continue;
                 if (p.nextHint.equals("")) {
                     p.lateHint = true;
-                    p.sendMessage(ChatColor.RED+"You did not enter your hint, please do it quickly");
+                    p.sendMessage(ChatColor.RED + "You did not enter your hint, please do it quickly");
                     continue;
                 }
-                hintText += ChatColor.BLUE+"Hint for " + p.getName() + ": " + ChatColor.WHITE + p.nextHint + "\n";
+                hintText += ChatColor.BLUE + "Hint for " + p.getName() + ": " + ChatColor.WHITE + p.nextHint + "\n";
                 p.nextHint = "";
             }
-            hintText += "\n"+ChatColor.GOLD+"Next hint at " + formatTime(hintTimes[nextHintIndex + 1]) + " in "
+            hintText += "\n" + ChatColor.GOLD + "Next hint at " + formatTime(hintTimes[nextHintIndex + 1]) + " in "
                     + formatTime(hintTimes[nextHintIndex + 1] - hintTimes[nextHintIndex]);
             sendMessageToAllPlayers(hintText);
 
-            sendMessageToAllHiders(ChatColor.GOLD+"Don't forget to set your next hint");
+            sendMessageToAllHiders(ChatColor.GOLD + "Don't forget to set your next hint");
 
             nextHintIndex++;
+        }
+        
+        for (Map.Entry<UUID, HSPlayer> entry : players.entrySet()) {
+            HSPlayer pl = entry.getValue();
+            if (!pl.isSeeker)
+                continue;
+            if(!pl.player.hasStatusEffect(NO_RADAR_EFFECT)) {
+                pl.player.addStatusEffect(new StatusEffectInstance(NO_RADAR_EFFECT, StatusEffectInstance.INFINITE, 1, true, false));
+            }
         }
 
         if (time < 0) {
@@ -219,6 +253,13 @@ public class GameManager implements ServerTickEvents.StartTick {
                 timeBar.setColor(Color.GREEN);
             }
             timeBar.setPercent(-time / hideTime);
+            for (Map.Entry<UUID, HSPlayer> entry : players.entrySet()) {
+                HSPlayer pl = entry.getValue();
+                if (!pl.isSeeker)
+                    continue;
+                pl.player.teleport(centerX, centerY, centerZ);
+            }
+
         } else if (lTime < 0 && time >= 0) {
             // Time for seeker to start
             sendMessageToAllPlayers(
@@ -322,5 +363,16 @@ public class GameManager implements ServerTickEvents.StartTick {
             sendMessageToAllSeekers(ChatColor.GREEN+"One found, " + remaining + " to go");
         }
         return true;
+    }
+
+    public void handleDisconnect(ServerPlayerEntity player) {
+        UUID uuid = player.getUuid();
+        if (!players.containsKey(uuid)) {
+            return;
+        }
+        HSPlayer hsPlayer = players.get(uuid);
+        players.remove(uuid);
+        hsPlayer.handleDisconnect();
+        logger.info("Removed player " + player.getName());
     }
 }

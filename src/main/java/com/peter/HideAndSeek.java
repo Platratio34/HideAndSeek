@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.entity.boss.BossBarManager;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.Team;
@@ -27,7 +28,8 @@ import com.mojang.brigadier.context.CommandContext;
 
 public class HideAndSeek implements ModInitializer {
 
-	public static final String TEAM_NAME = "hs.hiders";
+	public static final String HIDER_TEAM_NAME = "hs.hiders";
+	public static final String SEEKER_TEAM_NAME = "hs.seekers";
 	public static final Identifier TIME_BAR_ID = new Identifier("hideandseek.timebar");
 
 	// This logger is used to write text to the console and the log file.
@@ -65,15 +67,25 @@ public class HideAndSeek implements ModInitializer {
 			HideAndSeek.server = server;
 			scoreboard = server.getScoreboard();
 
-			Team team = scoreboard.getTeam(TEAM_NAME);
-			if (team == null) {
-				team = scoreboard.addTeam(TEAM_NAME);
+			Team hiderTeam = scoreboard.getTeam(HIDER_TEAM_NAME);
+			if (hiderTeam == null) {
+				hiderTeam = scoreboard.addTeam(HIDER_TEAM_NAME);
 			}
-			if (team == null) {
+			if (hiderTeam == null) {
 				LOGGER.error("Could not make hider team");
 				return;
 			}
-			manager.hiderTeam = team;
+			manager.hiderTeam = hiderTeam;
+
+			Team seekerTeam = scoreboard.getTeam(SEEKER_TEAM_NAME);
+			if (seekerTeam == null) {
+				seekerTeam = scoreboard.addTeam(SEEKER_TEAM_NAME);
+			}
+			if (seekerTeam == null) {
+				LOGGER.error("Could not make seeker team");
+				return;
+			}
+			manager.seekerTeam = seekerTeam;
 
 			bossBarManager = server.getBossBarManager();
 
@@ -90,6 +102,10 @@ public class HideAndSeek implements ModInitializer {
 				return ActionResult.FAIL;
 			}
 			return ActionResult.PASS;
+		});
+
+		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+			manager.handleDisconnect(handler.player);
 		});
 
 		LOGGER.info("Loaded Hide & Seek");
@@ -217,7 +233,7 @@ public class HideAndSeek implements ModInitializer {
 			cmdSendFeedback(context, ChatColor.RED + "Unknown action \"" + action + "\"");
 			return -1;
 		} catch (Exception e) {
-			LOGGER.error(e.toString());
+			LOGGER.error(e.getMessage(), e);
 			cmdSendFeedback(context, ChatColor.RED+"Something went wrong");
 			return -1;
 		}
