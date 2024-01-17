@@ -13,10 +13,8 @@ import net.minecraft.entity.boss.CommandBossBar;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
 import net.minecraft.entity.boss.BossBar.Color;
 import net.minecraft.scoreboard.AbstractTeam.VisibilityRule;
 import net.minecraft.scoreboard.Team;
@@ -42,50 +40,18 @@ public class GameManager implements ServerTickEvents.StartTick {
     public CommandBossBar timeBar;
 
     public float hideTime = 2 * 60f;
-
-    public float[] hintTimes = new float[] {
-            120, // testing
-            5 * 60,
-            8 * 60,
-            10 * 60,
-            12 * 60,
-            14 * 60,
-            16 * 60,
-            18 * 60,
-            20 * 60,
-            22 * 60,
-            24 * 60,
-            26 * 60,
-            28 * 60,
-            30 * 60,
-            32 * 60,
-            34 * 60,
-            36 * 60,
-            38 * 60,
-            40 * 60,
-            42 * 60,
-            44 * 60,
-            46 * 60,
-            48 * 60,
-            50 * 60,
-            52 * 60,
-            54 * 60,
-            56 * 60,
-            58 * 60,
-            60 * 60
-    };
     private int nextHintIndex = 0;
 
-    private double centerX = 0.5;
-    private double centerY = 101;
-    private double centerZ = 0.5;
-
     private Logger logger;
+
+    public Config config;
 
     public GameManager() {
         players = new HashMap<UUID, HSPlayer>();
         logger = HideAndSeek.LOGGER;
         hideTime = 30; // dev only
+        config = new Config();
+        config.load();
     }
 
     public HSPlayer getPlayer(ServerPlayerEntity player) {
@@ -198,7 +164,7 @@ public class GameManager implements ServerTickEvents.StartTick {
         float lTime = time;
         time = (runTimeM / 1000f) - hideTime;
 
-        if (hintTimes[nextHintIndex] > lTime && hintTimes[nextHintIndex] <= time) {
+        if (config.hintTimes[nextHintIndex] > lTime && config.hintTimes[nextHintIndex] <= time) {
             // Do the next hint
             // Check w/ lTime is for if the hint should have been done between the last tick and this one
             sendMessageToAllPlayers(ChatColor.GREEN + "Hint time! (" + formatTime(time) + ")");
@@ -216,8 +182,8 @@ public class GameManager implements ServerTickEvents.StartTick {
                 hintText += ChatColor.BLUE + "Hint for " + p.getName() + ": " + ChatColor.WHITE + p.nextHint + "\n";
                 p.nextHint = "";
             }
-            hintText += "\n" + ChatColor.GOLD + "Next hint at " + formatTime(hintTimes[nextHintIndex + 1]) + " in "
-                    + formatTime(hintTimes[nextHintIndex + 1] - hintTimes[nextHintIndex]);
+            hintText += "\n" + ChatColor.GOLD + "Next hint at " + formatTime(config.hintTimes[nextHintIndex + 1]) + " in "
+                    + formatTime(config.hintTimes[nextHintIndex + 1] - config.hintTimes[nextHintIndex]);
             sendMessageToAllPlayers(hintText);
 
             sendMessageToAllHiders(ChatColor.GOLD + "Don't forget to set your next hint");
@@ -257,30 +223,30 @@ public class GameManager implements ServerTickEvents.StartTick {
                 HSPlayer pl = entry.getValue();
                 if (!pl.isSeeker)
                     continue;
-                pl.player.teleport(centerX, centerY, centerZ);
+                pl.player.teleport(config.centerX, config.centerY, config.centerZ);
             }
 
         } else if (lTime < 0 && time >= 0) {
             // Time for seeker to start
             sendMessageToAllPlayers(
                 ChatColor.GREEN+"Ready or not, here they come\nSeekers start looking\n\n"+ChatColor.WHITE+"First hint in "
-                            + formatTime(hintTimes[0]));
+                            + formatTime(config.hintTimes[0]));
             sendMessageToAllHiders(ChatColor.GOLD+"Don't forget to set your first hint with "+ChatColor.WHITE+"/hs hint <hint>");
 
         } else {
             timeBar.setName(Text.of(String.format("Seek Time: %s", formatTime(time))));
-            float timeToNext = hintTimes[nextHintIndex] - time;
+            float timeToNext = config.hintTimes[nextHintIndex] - time;
             float timeBetweenHints = 0;
             if (nextHintIndex == 0) {
-                timeBetweenHints = hintTimes[0];
+                timeBetweenHints = config.hintTimes[0];
             } else {
-                timeBetweenHints = hintTimes[nextHintIndex] - hintTimes[nextHintIndex - 1];
+                timeBetweenHints = config.hintTimes[nextHintIndex] - config.hintTimes[nextHintIndex - 1];
             }
             float p = timeToNext / timeBetweenHints;
             timeBar.setPercent(p);
             if (timeToNext < 10) {
                 timeBar.setColor(Color.RED);
-                if ((hintTimes[nextHintIndex] - lTime) >= 10) {
+                if ((config.hintTimes[nextHintIndex] - lTime) >= 10) {
                     sendMessageToAllPlayers(ChatColor.GOLD+"10 seconds to next hint");
                     for (Map.Entry<UUID, HSPlayer> entry : players.entrySet()) {
                         HSPlayer pl = entry.getValue();
@@ -293,7 +259,7 @@ public class GameManager implements ServerTickEvents.StartTick {
                 }
             } else if (timeToNext < 30) {
                 timeBar.setColor(Color.YELLOW);
-                if ((hintTimes[nextHintIndex] - lTime) >= 30) {
+                if ((config.hintTimes[nextHintIndex] - lTime) >= 30) {
                     for (Map.Entry<UUID, HSPlayer> entry : players.entrySet()) {
                         HSPlayer pl = entry.getValue();
                         if (!pl.isHider)
