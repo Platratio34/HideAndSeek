@@ -21,33 +21,33 @@ public class HSPlayer {
         this.manager = manager;
     }
 
-    public String getName() {
-        return player.getEntityName();
+    public Text getName() {
+        return player.getName();
     }
 
     public void makeHider() {
         isHider = true;
         isSeeker = false;
-        HideAndSeek.scoreboard.addPlayerToTeam(getName(), manager.hiderTeam);
+        HideAndSeek.scoreboard.addScoreHolderToTeam(player.getNameForScoreboard(), manager.hiderTeam);
         manager.timeBar.addPlayer(player);
     }
 
     public void makeSeeker() {
         isHider = false;
         isSeeker = true;
-        if(HideAndSeek.scoreboard.getPlayerTeam(player.getEntityName()) == manager.hiderTeam)
-            HideAndSeek.scoreboard.removePlayerFromTeam(player.getEntityName(), manager.hiderTeam);
-        HideAndSeek.scoreboard.addPlayerToTeam(getName(), manager.seekerTeam);
+        if(HideAndSeek.scoreboard.getScoreHolderTeam(player.getNameForScoreboard()) == manager.hiderTeam)
+            HideAndSeek.scoreboard.removeScoreHolderFromTeam(player.getNameForScoreboard(), manager.hiderTeam);
+        HideAndSeek.scoreboard.addScoreHolderToTeam(player.getNameForScoreboard(), manager.seekerTeam);
         manager.timeBar.addPlayer(player);
     }
 
     public void clear() {
         isHider = false;
         isSeeker = false;
-        if(HideAndSeek.scoreboard.getPlayerTeam(player.getEntityName()) == manager.hiderTeam)
-            HideAndSeek.scoreboard.removePlayerFromTeam(player.getEntityName(), manager.hiderTeam);
-        if(HideAndSeek.scoreboard.getPlayerTeam(player.getEntityName()) == manager.seekerTeam)
-            HideAndSeek.scoreboard.removePlayerFromTeam(player.getEntityName(), manager.seekerTeam);
+        if(HideAndSeek.scoreboard.getScoreHolderTeam(player.getNameForScoreboard()) == manager.hiderTeam)
+            HideAndSeek.scoreboard.removeScoreHolderFromTeam(player.getNameForScoreboard(), manager.hiderTeam);
+        if(HideAndSeek.scoreboard.getScoreHolderTeam(player.getNameForScoreboard()) == manager.seekerTeam)
+            HideAndSeek.scoreboard.removeScoreHolderFromTeam(player.getNameForScoreboard(), manager.seekerTeam);
         manager.timeBar.removePlayer(player);
     }
 

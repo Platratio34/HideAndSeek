@@ -30,7 +30,7 @@ public class HideAndSeek implements ModInitializer {
 
 	public static final String HIDER_TEAM_NAME = "hs.hiders";
 	public static final String SEEKER_TEAM_NAME = "hs.seekers";
-	public static final Identifier TIME_BAR_ID = new Identifier("hideandseek.timebar");
+	public static final Identifier TIME_BAR_ID = Identifier.of("hideandseek", "timebar");
 
 	// This logger is used to write text to the console and the log file.
 	// It is considered best practice to use your mod id as the logger's name.

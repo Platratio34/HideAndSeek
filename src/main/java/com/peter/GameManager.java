@@ -15,6 +15,7 @@ import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.entity.boss.BossBar.Color;
 import net.minecraft.scoreboard.AbstractTeam.VisibilityRule;
 import net.minecraft.scoreboard.Team;
@@ -26,8 +27,8 @@ import net.minecraft.util.Identifier;
 public class GameManager implements ServerTickEvents.StartTick {
 
     private final String TIME_FORMAT = "%s%02d:%02.0f";
-    private final String NO_RADAR_EFFECT_NAME = "xaerominimap:no_entity_radar";
-    private StatusEffect NO_RADAR_EFFECT;
+    private final Identifier NO_RADAR_EFFECT_ID = Identifier.of("xaerominimap", "no_entity_radar");
+    private RegistryEntry<StatusEffect> NO_RADAR_EFFECT;
 
     public HashMap<UUID, HSPlayer> players;
 
@@ -62,7 +63,7 @@ public class GameManager implements ServerTickEvents.StartTick {
 
     public void start() {
         if (NO_RADAR_EFFECT == null) {
-            NO_RADAR_EFFECT = Registries.STATUS_EFFECT.get(new Identifier(NO_RADAR_EFFECT_NAME));
+            NO_RADAR_EFFECT = Registries.STATUS_EFFECT.getEntry(NO_RADAR_EFFECT_ID).get();
         }
         hiderTeam.setNameTagVisibilityRule(VisibilityRule.HIDE_FOR_OTHER_TEAMS);
         startTime = System.currentTimeMillis();
@@ -221,7 +222,7 @@ public class GameManager implements ServerTickEvents.StartTick {
                 HSPlayer pl = entry.getValue();
                 if (!pl.isSeeker)
                     continue;
-                pl.player.teleport(config.centerX, config.centerY, config.centerZ);
+                pl.player.teleport(config.centerX, config.centerY, config.centerZ, false);
             }
 
         } else if (lTime < 0 && time >= 0) {
