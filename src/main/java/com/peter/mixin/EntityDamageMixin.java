@@ -11,12 +11,13 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.server.world.ServerWorld;
 
 @Mixin({ LivingEntity.class })
 public abstract class EntityDamageMixin {
 
-	@Inject(method = "Lnet/minecraft/entity/LivingEntity;applyDamage(Lnet/minecraft/entity/damage/DamageSource;F)V", at = @At(value = "HEAD"), cancellable = true)
-	private void onDamage(DamageSource source, float amount, CallbackInfo info) {
+    @Inject(method = "Lnet/minecraft/entity/LivingEntity;applyDamage(Lnet/minecraft/server/world/ServerWorld;Lnet/minecraft/entity/damage/DamageSource;F)V", at = @At(value = "HEAD"), cancellable = true)
+	private void onDamage(ServerWorld world, DamageSource source, float amount, CallbackInfo info) {
 		if (HideAndSeek.manager.checkDamage((Entity) (Object) this, source)) {
 			// info.setReturnValue(false);
 			info.cancel();

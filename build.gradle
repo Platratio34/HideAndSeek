@@ -1,5 +1,5 @@
 plugins {
-	id 'fabric-loom' version '1.7-SNAPSHOT'
+	id 'fabric-loom' version "${loom_version}"
 	id 'maven-publish'
 }
 
@@ -24,7 +24,7 @@ loom {
     splitEnvironmentSourceSets()
 
 	mods {
-		"modid" {
+		"hideandseek" {
 			sourceSet sourceSets.main
 			sourceSet sourceSets.client
 		}
@@ -50,10 +50,16 @@ dependencies {
 }
 
 processResources {
-	inputs.property "version", project.version
+	inputs.property("mod_version", project.mod_version)
+	inputs.property("loader_version", project.loader_version)
+	inputs.property("minecraft_version", project.minecraft_version)
 
 	filesMatching("fabric.mod.json") {
-		expand "version": project.version
+		expand(
+            "mod_version": project.mod_version,
+            "loader_version": project.loader_version,
+            "minecraft_version": project.minecraft_version
+        )
 	}
 }
 
@@ -75,6 +81,9 @@ jar {
 	from("LICENSE") {
 		rename { "${it}_${project.base.archivesName.get()}"}
 	}
+}
+tasks.remapJar {
+    archiveClassifier.set("mc${project.minecraft_version}")
 }
 
 // configure the maven publication
